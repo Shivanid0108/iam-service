@@ -1,4 +1,4 @@
-package com.shivani.iamservice;
+package com.shivani.iamservice.security;
 
 import java.util.Date; // when the token was issued / expires
 
@@ -6,6 +6,8 @@ import javax.crypto.SecretKey; // the type of a cryptographic key object
 
 import org.springframework.beans.factory.annotation.Value; // lets @Value("${jwt.secret}") read a value from application.properties
 import org.springframework.stereotype.Service; // makes JwtService a Spring-managed class
+
+import com.shivani.iamservice.model.User;
 
 import io.jsonwebtoken.Claims; // everything printed on the token: subject, role, dates
 import io.jsonwebtoken.Jwts; // main entry point of the jjwt library: builds and reads tokens

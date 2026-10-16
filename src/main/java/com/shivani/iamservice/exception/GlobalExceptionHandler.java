@@ -1,4 +1,4 @@
-package com.shivani.iamservice;
+package com.shivani.iamservice.exception;
 
 import java.util.Map; // builds the {"error": "..."} JSON body
 

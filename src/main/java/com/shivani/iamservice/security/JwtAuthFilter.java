@@ -1,4 +1,4 @@
-package com.shivani.iamservice;
+package com.shivani.iamservice.security;
 
 import java.io.IOException;
 import java.util.List; // holds the user's authorities (their roles) for Spring Security

@@ -1,4 +1,4 @@
-package com.shivani.iamservice;
+package com.shivani.iamservice.controller;
 
 import java.util.Map; // used to build the {"token": "..."} body in the login response
 
@@ -8,6 +8,10 @@ import org.springframework.web.bind.annotation.PostMapping; // routes POST reque
 import org.springframework.web.bind.annotation.RequestBody; // binds the incoming JSON to a Java object
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.shivani.iamservice.dto.LoginRequest;
+import com.shivani.iamservice.dto.RegisterRequest;
+import com.shivani.iamservice.service.AuthService;
 
 @RestController // this class receives HTTP requests and sends back data (usually JSON). Marks a
 				// web entry point

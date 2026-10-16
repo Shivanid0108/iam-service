@@ -15,6 +15,12 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.shivani.iamservice.model.Role;
+import com.shivani.iamservice.model.User;
+import com.shivani.iamservice.repository.UserRepository;
+import com.shivani.iamservice.security.JwtService;
+import com.shivani.iamservice.service.AuthService;
+
 class AuthServiceTest {
 
 	private UserRepository userRepository;

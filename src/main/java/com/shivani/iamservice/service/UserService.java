@@ -1,7 +1,10 @@
-package com.shivani.iamservice;
+package com.shivani.iamservice.service;
 
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
+
+import com.shivani.iamservice.model.User;
+import com.shivani.iamservice.repository.UserRepository;
 
 // Business logic for looking up users. UserController asks this class
 // for a user, and this class asks the repository (the database layer).

@@ -1,4 +1,4 @@
-package com.shivani.iamservice;
+package com.shivani.iamservice.model;
 
 import java.time.LocalDateTime; // a class for representing date and time
 

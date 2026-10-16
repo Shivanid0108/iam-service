@@ -1,10 +1,14 @@
-package com.shivani.iamservice;
+package com.shivani.iamservice.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.shivani.iamservice.dto.UserResponse;
+import com.shivani.iamservice.model.User;
+import com.shivani.iamservice.service.UserService;
 
 @RestController // return values become JSON, not web pages
 @RequestMapping("/api/users") // shared URL prefix for every method in this class

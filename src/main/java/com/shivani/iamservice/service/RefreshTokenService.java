@@ -1,4 +1,4 @@
-package com.shivani.iamservice;
+package com.shivani.iamservice.service;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -11,6 +11,9 @@ import java.util.HexFormat;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import com.shivani.iamservice.model.RefreshToken;
+import com.shivani.iamservice.repository.RefreshTokenRepository;
 
 @Service
 public class RefreshTokenService {

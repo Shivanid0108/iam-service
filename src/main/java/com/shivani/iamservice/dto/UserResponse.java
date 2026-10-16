@@ -1,6 +1,8 @@
-package com.shivani.iamservice;
+package com.shivani.iamservice.dto;
 
 import java.time.LocalDateTime;
+
+import com.shivani.iamservice.model.Role;
 
 // A record is an immutable data carrier: Java generates the constructor,
 // getters (id(), email(), createdAt(), role()), equals, hashCode and toString.

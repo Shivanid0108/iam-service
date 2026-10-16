@@ -1,10 +1,7 @@
-package com.shivani.iamservice;
+package com.shivani.iamservice.dto;
 
-// The shape of the JSON a client sends to POST /api/auth/register.
-// There is deliberately NO role field: even if a client adds "role": "ADMIN"
-// to the JSON, it is ignored, because there is nowhere for it to land.
-// The role is always set to EMPLOYEE inside AuthService.
-public class RegisterRequest {
+// The shape of the JSON a client sends to POST /api/auth/login.
+public class LoginRequest {
 
 	private String email;
 	private String password;
@@ -13,7 +10,7 @@ public class RegisterRequest {
 	// than User's — this one exists so Spring can build the object from
 	// incoming JSON (Jackson, the library Spring uses for JSON conversion,
 	// constructs it empty first, then sets each field).
-	public RegisterRequest() {
+	public LoginRequest() {
 	}
 
 	public String getEmail() {

@@ -1,8 +1,13 @@
-package com.shivani.iamservice;
+package com.shivani.iamservice.service;
 
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import com.shivani.iamservice.model.Role;
+import com.shivani.iamservice.model.User;
+import com.shivani.iamservice.repository.UserRepository;
+import com.shivani.iamservice.security.JwtService;
 
 // @Service: tells Spring "this class contains business logic — create
 // one instance of it automatically, and make it available to hand to
