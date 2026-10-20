@@ -1,6 +1,7 @@
 package com.shivani.iamservice.exception;
 
 import java.util.Map; // builds the {"error": "..."} JSON body
+import java.util.NoSuchElementException;
 
 import org.springframework.http.HttpStatus; // named HTTP status codes (HttpStatus.BAD_REQUEST -> 400)
 import org.springframework.http.ResponseEntity; // status code + body together
@@ -20,12 +21,20 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
 	}
 
-	// Thrown by login (and UserService.getById) when credentials are wrong.
-	// The message is the same for "unknown email" and "wrong password", so an
-	// attacker can't tell which emails exist -> 401.
+	// Thrown when credentials or tokens are wrong: login (bad email or password),
+	// refresh (unknown, used or expired refresh token) and UserService.getById.
+	// The message never says WHICH part failed, so an attacker learns nothing ->
+	// 401.
 	@ExceptionHandler(BadCredentialsException.class)
 	public ResponseEntity<Map<String, String>> handleUnauthorized(BadCredentialsException e) {
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
+	}
+
+	// Thrown by UserService.changeRole when the user id doesn't exist.
+	// The thing asked for isn't there -> 404.
+	@ExceptionHandler(NoSuchElementException.class)
+	public ResponseEntity<Map<String, String>> handleNotFound(NoSuchElementException ex) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", ex.getMessage()));
 	}
 
 }

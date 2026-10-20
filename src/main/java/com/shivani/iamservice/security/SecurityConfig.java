@@ -55,8 +55,11 @@ public class SecurityConfig {
 				// Door rules. The FIRST matching rule wins, so order matters:
 				// specific rules at the top, the catch-all last.
 				.authorizeHttpRequests(auth -> auth
-						// Public: you can't have a token before you register or log in.
-						.requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+						// Public: the user has no access token yet (register, login), or the
+						// refresh token in the body is the proof (refresh, logout).
+						.requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/refresh",
+								"/api/auth/logout")
+						.permitAll()
 						// Spring forwards failures to /error internally. If this isn't open,
 						// that forward is blocked too and a 403 gets reported as a 401.
 						.requestMatchers("/error").permitAll()

@@ -57,9 +57,10 @@ public class User {
 		this.createdAt = LocalDateTime.now();
 	}
 
-	// No setters for id/email/hashedPassword/createdAt/role
-	// encapsulation discipline: once set,
-	// these fields shouldn't be mutated from outside the class.
+	// No setters for id/email/hashedPassword/createdAt:
+	// encapsulation discipline: once set, these fields shouldn't be mutated from
+	// outside the class. The role is the one exception, and it can only be changed
+	// through changeRole() below.
 
 	public Long getId() {
 		return id;
@@ -79,6 +80,13 @@ public class User {
 
 	public Role getRole() {
 		return role;
+	}
+
+	// The ONLY way to change a user's role (used by the admin endpoint).
+	// There is no general setRole(), so a role can't be changed by accident
+	// elsewhere.
+	public void changeRole(Role newRole) {
+		this.role = newRole;
 	}
 
 }

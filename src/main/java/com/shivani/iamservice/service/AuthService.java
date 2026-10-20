@@ -4,6 +4,8 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.shivani.iamservice.dto.TokenResponse;
+import com.shivani.iamservice.model.RefreshToken;
 import com.shivani.iamservice.model.Role;
 import com.shivani.iamservice.model.User;
 import com.shivani.iamservice.repository.UserRepository;
@@ -28,20 +30,31 @@ public class AuthService {
 	// (e.g. for Argon2) without changing this class at all.
 	private final PasswordEncoder passwordEncoder;
 
-	// Creates the signed JWT (with the user's id and role) after a successful
-	// login.
+	// Creates the signed JWT (the access token, with the user's id and role).
 	private final JwtService jwtService;
+
+	// Loads a user by id. Used by refresh() to get the user's CURRENT role from the
+	// database (instead of trusting the old token).
+	private final UserService userService;
+
+	// Creates, checks and revokes refresh tokens. AuthService never touches the
+	// refresh_tokens table directly; this service owns it.
+	private final RefreshTokenService refreshTokenService;
 
 	// Constructor: Spring calls this automatically when it creates
 	// an AuthService, and it AUTOMATICALLY supplies working instances
-	// of all three parameters below — you never write "new AuthService(...)"
+	// of all five parameters below — you never write "new AuthService(...)"
 	// anywhere yourself. This is called "dependency injection."
-	public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
+	public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService,
+			UserService userService, RefreshTokenService refreshTokenService) {
 		// Each line just stores the object Spring handed us into
 		// the matching field, so the rest of this class can use them.
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtService = jwtService;
+		this.userService = userService;
+		this.refreshTokenService = refreshTokenService;
+
 	}
 
 	// Email must look like name@domain.tld. Null is rejected here, so no
@@ -101,7 +114,10 @@ public class AuthService {
 	// attacker can't tell which emails are registered (user enumeration
 	// protection).
 	// BadCredentialsException is mapped to 401 in GlobalExceptionHandler.
-	public String login(String email, String password) {
+	// On success the user gets TWO tokens:
+	// - access token: a JWT that opens doors, lasts 15 minutes
+	// - refresh token: a random value used only to get a new pair, lasts 7 days
+	public TokenResponse login(String email, String password) {
 
 		User user = userRepository.findByEmail(email)
 				.orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
@@ -109,7 +125,38 @@ public class AuthService {
 		if (!passwordEncoder.matches(password, user.getHashedPassword())) {
 			throw new BadCredentialsException("Invalid email or password");
 		}
+		String accessToken = jwtService.generateToken(user);
+		String refreshToken = refreshTokenService.createRefreshToken(user.getId());
 
-		return jwtService.generateToken(user);
+		return new TokenResponse(accessToken, refreshToken);
+	}
+
+	// Trades a valid refresh token for a brand-new pair (rotation).
+	// Order matters:
+	// 1. check the old token (unknown, used or expired -> 401 and we stop here)
+	// 2. revoke it, so it can never be used a second time
+	// 3. load the user from the database, so the new access token carries their
+	// CURRENT role (this is how a role change reaches the user)
+	// 4. create the new access token and the new refresh token
+	public TokenResponse refresh(String rawRefreshToken) {
+
+		RefreshToken oldToken = refreshTokenService.verifyRefreshToken(rawRefreshToken);
+
+		refreshTokenService.revoke(oldToken);
+
+		User user = userService.getById(oldToken.getUserId());
+
+		String accessToken = jwtService.generateToken(user);
+		String newRefreshToken = refreshTokenService.createRefreshToken(user.getId());
+
+		return new TokenResponse(accessToken, newRefreshToken);
+	}
+
+	// Kills the refresh token so no new access tokens can be issued with it.
+	// Never throws: an unknown or already-used token is simply ignored, so the
+	// client always sees success and learns nothing about which tokens exist.
+	// The current access token still works until it expires (stateless JWT).
+	public void logout(String rawRefreshToken) {
+		refreshTokenService.revokeByRawToken(rawRefreshToken);
 	}
 }
