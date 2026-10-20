@@ -1,0 +1,4 @@
+  target/
+  .git/
+  keystore.p12
+  .env

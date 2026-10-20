@@ -32,6 +32,8 @@ build/
 # Local TLS key (never commit)
 keystore.p12
 
+.env
+
 
 ### VS Code ###
 .vscode/
