@@ -37,4 +37,11 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", ex.getMessage()));
 	}
 
+	// Thrown by RateLimitService when someone tries to log in too many times.
+	// The client is going too fast -> 429.
+	@ExceptionHandler(TooManyRequestsException.class)
+	public ResponseEntity<Map<String, String>> handleTooManyRequests(TooManyRequestsException e) {
+		return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(Map.of("error", e.getMessage()));
+	}
+
 }

@@ -3,6 +3,7 @@ package com.shivani.iamservice;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -18,12 +19,14 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.shivani.iamservice.dto.TokenResponse;
+import com.shivani.iamservice.exception.TooManyRequestsException;
 import com.shivani.iamservice.model.RefreshToken;
 import com.shivani.iamservice.model.Role;
 import com.shivani.iamservice.model.User;
 import com.shivani.iamservice.repository.UserRepository;
 import com.shivani.iamservice.security.JwtService;
 import com.shivani.iamservice.service.AuthService;
+import com.shivani.iamservice.service.RateLimitService;
 import com.shivani.iamservice.service.RefreshTokenService;
 import com.shivani.iamservice.service.UserService;
 
@@ -31,12 +34,13 @@ import com.shivani.iamservice.service.UserService;
 // check only AuthService's own logic: no database, no Spring, no real tokens.
 class AuthServiceTest {
 
-	// The fakes AuthService needs (the same five as its constructor).
+	// The fakes AuthService needs (the same six as its constructor).
 	private UserRepository userRepository;
 	private PasswordEncoder passwordEncoder;
 	private JwtService jwtService;
 	private UserService userService;
 	private RefreshTokenService refreshTokenService;
+	private RateLimitService rateLimitService;
 	// The real object under test.
 	private AuthService authService;
 
@@ -48,7 +52,9 @@ class AuthServiceTest {
 		jwtService = mock(JwtService.class);
 		userService = mock(UserService.class);
 		refreshTokenService = mock(RefreshTokenService.class);
-		authService = new AuthService(userRepository, passwordEncoder, jwtService, userService, refreshTokenService);
+		rateLimitService = mock(RateLimitService.class);
+		authService = new AuthService(userRepository, passwordEncoder, jwtService, userService, refreshTokenService,
+				rateLimitService);
 	}
 
 	// ---------- REGISTER ----------
@@ -204,6 +210,49 @@ class AuthServiceTest {
 		// Nothing after the failed check may have run: no revoke, no new tokens.
 		verify(refreshTokenService, never()).revoke(any());
 		verify(refreshTokenService, never()).createRefreshToken(any());
+	}
+
+	// Rate limit: when the limiter says "too many tries", login stops right away.
+	// It must NOT even look the user up (no database, no BCrypt work).
+	@Test
+	void login_whenRateLimited_throwsAndNeverLooksUpUser() {
+		// checkLoginAttempt returns void, so we use doThrow(...).when(...) instead of
+		// when(...).thenThrow(...).
+		doThrow(new TooManyRequestsException("Too many login attempts. Try again later.")).when(rateLimitService)
+				.checkLoginAttempt("test@gmail.com");
+
+		assertThrows(TooManyRequestsException.class, () -> {
+			authService.login("test@gmail.com", "Test@1234");
+		});
+
+		verify(userRepository, never()).findByEmail(any());
+	}
+
+	// Success: a correct password clears the counter so a real user starts fresh.
+	@Test
+	void login_validCredentials_resetsAttemptCounter() {
+		User user = new User("test@gmail.com", "hashedPassword123", Role.EMPLOYEE);
+		when(userRepository.findByEmail("test@gmail.com")).thenReturn(Optional.of(user));
+		when(passwordEncoder.matches("Test@1234", "hashedPassword123")).thenReturn(true);
+
+		authService.login("test@gmail.com", "Test@1234");
+
+		verify(rateLimitService).resetLoginAttempts("test@gmail.com");
+	}
+
+	// Failure: a wrong password must NOT clear the counter, or an attacker could
+	// reset it themselves and never get blocked.
+	@Test
+	void login_wrongPassword_doesNotResetAttemptCounter() {
+		User user = new User("test@gmail.com", "hashedPassword123", Role.EMPLOYEE);
+		when(userRepository.findByEmail("test@gmail.com")).thenReturn(Optional.of(user));
+		when(passwordEncoder.matches("WrongPass1@", "hashedPassword123")).thenReturn(false);
+
+		assertThrows(BadCredentialsException.class, () -> {
+			authService.login("test@gmail.com", "WrongPass1@");
+		});
+
+		verify(rateLimitService, never()).resetLoginAttempts(any());
 	}
 
 }

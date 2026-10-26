@@ -41,12 +41,14 @@ public class AuthService {
 	// refresh_tokens table directly; this service owns it.
 	private final RefreshTokenService refreshTokenService;
 
+	private final RateLimitService rateLimitService;
+
 	// Constructor: Spring calls this automatically when it creates
 	// an AuthService, and it AUTOMATICALLY supplies working instances
 	// of all five parameters below — you never write "new AuthService(...)"
 	// anywhere yourself. This is called "dependency injection."
 	public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService,
-			UserService userService, RefreshTokenService refreshTokenService) {
+			UserService userService, RefreshTokenService refreshTokenService, RateLimitService rateLimitService) {
 		// Each line just stores the object Spring handed us into
 		// the matching field, so the rest of this class can use them.
 		this.userRepository = userRepository;
@@ -54,6 +56,7 @@ public class AuthService {
 		this.jwtService = jwtService;
 		this.userService = userService;
 		this.refreshTokenService = refreshTokenService;
+		this.rateLimitService = rateLimitService;
 
 	}
 
@@ -119,12 +122,19 @@ public class AuthService {
 	// - refresh token: a random value used only to get a new pair, lasts 7 days
 	public TokenResponse login(String email, String password) {
 
+		// count this attempt first; throws if the user tried too many times
+		rateLimitService.checkLoginAttempt(email);
+
 		User user = userRepository.findByEmail(email)
 				.orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
 		if (!passwordEncoder.matches(password, user.getHashedPassword())) {
 			throw new BadCredentialsException("Invalid email or password");
 		}
+
+		// correct password: clear the counter so a real user starts fresh
+		rateLimitService.resetLoginAttempts(email);
+
 		String accessToken = jwtService.generateToken(user);
 		String refreshToken = refreshTokenService.createRefreshToken(user.getId());
 
