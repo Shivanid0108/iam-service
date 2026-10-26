@@ -45,7 +45,7 @@ public class AuthService {
 
 	// Constructor: Spring calls this automatically when it creates
 	// an AuthService, and it AUTOMATICALLY supplies working instances
-	// of all five parameters below — you never write "new AuthService(...)"
+	// of all six parameters below — you never write "new AuthService(...)"
 	// anywhere yourself. This is called "dependency injection."
 	public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService,
 			UserService userService, RefreshTokenService refreshTokenService, RateLimitService rateLimitService) {
@@ -121,6 +121,11 @@ public class AuthService {
 	// - access token: a JWT that opens doors, lasts 15 minutes
 	// - refresh token: a random value used only to get a new pair, lasts 7 days
 	public TokenResponse login(String email, String password) {
+
+		// a request with no email or password can never succeed
+		if (email == null || password == null) {
+			throw new BadCredentialsException("Invalid email or password");
+		}
 
 		// count this attempt first; throws if the user tried too many times
 		rateLimitService.checkLoginAttempt(email);
